@@ -1,0 +1,135 @@
+#include "modelerview.h"
+#include "camera.h"
+
+#include <FL/Fl.H>
+#include <FL/Fl_Gl_Window.h>
+#include <FL/gl.h>
+#include <GL/glu.h>
+#include <cstdio>
+
+static const int	kMouseRotationButton			= FL_LEFT_MOUSE;
+static const int	kMouseTranslationButton			= FL_MIDDLE_MOUSE;
+static const int	kMouseZoomButton				= FL_RIGHT_MOUSE;
+
+ModelerView::ModelerView(int x, int y, int w, int h, char *label)
+: Fl_Gl_Window(x,y,w,h,label)
+{
+    m_camera = new Camera();
+}
+
+ModelerView::~ModelerView()
+{
+	delete m_camera;
+}
+int ModelerView::handle(int event)
+{
+    unsigned eventCoordX = Fl::event_x();
+	unsigned eventCoordY = Fl::event_y();
+	unsigned eventButton = Fl::event_button();
+	unsigned eventState  = Fl::event_state();
+
+	switch(event)	 
+	{
+	case FL_PUSH:
+		{
+			switch(eventButton)
+			{
+			case kMouseRotationButton:
+				m_camera->clickMouse(kActionRotate, eventCoordX, eventCoordY );
+				break;
+			case kMouseTranslationButton:
+				m_camera->clickMouse(kActionTranslate, eventCoordX, eventCoordY );
+				break;
+			case kMouseZoomButton:
+				m_camera->clickMouse(kActionZoom, eventCoordX, eventCoordY );
+				break;
+				/*case kMouseZoomButton + kMouseRotationButton:			
+				m_camera->clickMouse(kActionTwist, eventCoordX, eventCoordY);
+				break;*/
+			}			
+			if (Fl::event_ctrl())
+			{
+				m_camera->clickMouse(kActionTwist, eventCoordX, eventCoordY);
+			}
+           // printf("push %d %d\n", eventCoordX, eventCoordY);
+		}
+		break;
+	case FL_DRAG:
+		{
+			m_camera->dragMouse(eventCoordX, eventCoordY);
+            //printf("drag %d %d\n", eventCoordX, eventCoordY);
+		}
+		break;
+	case FL_RELEASE:
+		{
+			switch(eventButton)
+			{
+			case kMouseRotationButton:
+			case kMouseTranslationButton:
+			case kMouseZoomButton:
+				m_camera->releaseMouse(eventCoordX, eventCoordY );
+				break;
+			}
+          //  printf("release %d %d\n", eventCoordX, eventCoordY);
+		}
+		break;
+	default:
+		return 0;
+	}
+	
+	redraw();
+
+	return 1;
+}
+
+static GLfloat lightPosition0[] = { 4, 2, -4, 0 };
+static GLfloat lightDiffuse0[]  = { 1,1,1,1 };
+static GLfloat lightPosition1[] = { -5, 5, 0, 0 };
+static GLfloat lightDiffuse1[]  = { 1, 1, 1, 1 };
+static GLfloat lightPosition2[] = { 3, -5, 9, 0 };
+static GLfloat lightDiffuse2[] = { 1, 1, 1, 1 };
+static GLfloat lightPosition3[] = { -1, 0, 5, 0 };
+static GLfloat lightDiffuse3[] = { 1, 1, 1, 1 };
+
+void ModelerView::draw()
+{
+    if (!valid())
+    {
+        glShadeModel( GL_SMOOTH );
+        glEnable( GL_DEPTH_TEST );
+        glEnable( GL_LIGHTING );
+		glEnable( GL_LIGHT0 );
+        glEnable( GL_LIGHT1 );
+		glEnable(GL_LIGHT2);
+		//glEnable(GL_LIGHT3);
+		glEnable( GL_NORMALIZE );
+    }
+
+  	glViewport( 0, 0, w(), h() );
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glClearColor(0.3f, 0.3f, 0.3f, 0.5f);	// White Background
+	gluPerspective(30.0,float(w())/float(h()),1.0,100.0);
+				
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    m_camera->applyViewingTransform();
+
+    glLightfv( GL_LIGHT0, GL_POSITION, lightPosition0 );
+    glLightfv( GL_LIGHT0, GL_DIFFUSE, lightDiffuse0 );
+    glLightfv( GL_LIGHT1, GL_POSITION, lightPosition1 );
+    glLightfv( GL_LIGHT1, GL_DIFFUSE, lightDiffuse1 );
+	glLightfv(GL_LIGHT2, GL_POSITION, lightPosition2);
+	glLightfv(GL_LIGHT2, GL_DIFFUSE, lightDiffuse2);
+	//glLightfv(GL_LIGHT3, GL_POSITION, lightPosition3);
+	//glLightfv(GL_LIGHT3, GL_DIFFUSE, lightDiffuse3);
+
+	
+	/*glActiveTextureARB(GL_TEXTURE1_ARB);
+	glBindTexture(GL_TEXTURE_2D, texture2);
+	glEnable(GL_TEXTURE_2D);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);
+	glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_INCR);*/
+
+}
